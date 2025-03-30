@@ -1,6 +1,6 @@
 module SimpleODE where
 
-data MethodType = Euler | AB2 | Dahlquist | RK4
+data MethodType = Euler | AB2 | Dahlquist | RK4 | PECE2
     deriving (Eq, Show)
 
 data IVP = IVP {
@@ -22,6 +22,7 @@ solve ivp
     | methodType ivp == AB2 = zip (iterate (+h) (t - h * 2)) (xis ivp) ++ ab2 ivp
     | methodType ivp == Dahlquist = zip (iterate (+h) (t - h * 2)) (xis ivp) ++ dahlquist ivp
     | methodType ivp == RK4 = zip (iterate (+h) (t - h)) (xis ivp) ++ rk4 ivp
+    | methodType ivp == PECE2 = zip (iterate (+h) (t - h * 2)) (xis ivp) ++ pece2 ivp
     | otherwise = []
     where
         t = from ivp
@@ -124,3 +125,34 @@ rk4 ivp
         k4 = f t (x0 + h * k3)
 
         x1 = x0 + h * (k1 / 6 + k2 / 3 + k3 /3 + k4 / 6)
+
+pece2 :: IVP -> [(Float, Float)]
+pece2 ivp
+    | t > tf = []
+    | otherwise = (t, x2) : pece2 IVP {
+        methodType = PECE2,
+        derivative = f,
+        xis = [x1, x2],
+        xi's = [x1', x2'],
+        step_size = h,
+        from = t + h,
+        to = tf
+    }
+
+    where
+        t = from ivp
+        tf = to ivp
+        h = step_size ivp
+        f = derivative ivp
+        (x0:x1:_) = xis ivp
+        (x0':x1':_) = xi's ivp
+
+        p = x1 + 0.5 * (3 * x1' - x0')
+        e1 = f t p
+        c = x1 - h / 12 * (5 * e1 + 8 * x1' - x0')
+        e2 = f t c
+
+        milne = -0.5 * (c - p)
+
+        x2 = c + milne
+        x2' = f t x2

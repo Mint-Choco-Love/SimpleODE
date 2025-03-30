@@ -20,7 +20,7 @@ main = do
     let ret1 = solve example_6_1_euler
     let ret2 = solve example_6_1_rk4
     let ret3 = solve example_6_1_ab2
-    let ret4 = solve example
+    let ret4 = solve example_6_1_pece2
     put "ode1.txt" ret1
     put "ode2.txt" ret2
     put "ode3.txt" ret3
