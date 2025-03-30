@@ -42,3 +42,81 @@ example_4_1_euler = IVP {
     from = 0.1,
     to = 4.0
 }
+
+example_4_1_rk4 :: IVP
+example_4_1_rk4 = IVP {
+    methodType = RK4,
+    derivative = \t x -> (1 - 2 * t) * x,
+    xis = [1],
+    xi's = [1],
+    step_size = 0.1,
+    from = 0.1,
+    to = 4.0
+}
+
+example_6_1_euler :: IVP
+example_6_1_euler = IVP {
+    methodType = Euler,
+    derivative = \t x -> -(8 * x) - 40 * (3 * exp (-(t / 8)) - 1),
+    xis = [100],
+    xi's = [-880],
+    step_size = 0.01,
+    from = 0.01,
+    to = 50
+}
+
+example_6_1_ab2 :: IVP
+example_6_1_ab2 = IVP {
+    methodType = AB2,
+    derivative = \t x -> -(8 * x) - 40 * (3 * exp (-(t / 8)) - 1),
+    xis = [100, 100],
+    xi's = [-880, -880],
+    step_size = 0.01,
+    from = 0.01,
+    to = 50
+}
+
+example_6_1_rk4 :: IVP
+example_6_1_rk4 = IVP {
+    methodType = RK4,
+    derivative = \t x -> -(8 * x) - 40 * (3 * exp (-t / 8) - 1),
+    xis = [100],
+    xi's = [],
+    step_size = 0.01,
+    from = 0.01,
+    to = 50
+}
+
+example :: IVP
+example = IVP {
+    methodType = RK4,
+    derivative = \t x -> -8 * (x - 5 - 15 * exp (-t / 8)),
+    xis = [100],
+    xi's = [],
+    step_size = 0.01,
+    from = 0.01,
+    to = 50
+}
+
+example_6_12_euler :: IVP 
+example_6_12_euler = IVP {
+    methodType = Euler,
+    derivative = \t x -> -(8 * x),
+    xis = [1],
+    xi's = [-8],
+    step_size = 1 / 120,
+    from = 1 / 120,
+    to = 3.0
+}
+
+example_6_12_rk4 :: IVP 
+example_6_12_rk4 = IVP {
+    methodType = RK4,
+    derivative = \t x -> -(8 * x),
+    xis = [1],
+    xi's = [],
+    step_size = 1 / 120,
+    from = 1 / 120,
+    to = 3.0
+}
+
