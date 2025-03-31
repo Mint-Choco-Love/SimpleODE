@@ -10,17 +10,10 @@ import Text.Printf
 
 main :: IO ()
 main = do
-    --let ret1 = solve example_4_1
-    --let ret2 = solve example_4_1_euler
-    --let ret3 = solve example_4_1_rk4
-    --put "ode1.txt" ret1
-    --put "ode2.txt" ret2
-    --put "ode3.txt" ret3
-
-    let ret1 = solve example_6_1_euler
-    let ret2 = solve example_6_1_rk4
-    let ret3 = solve example_6_1_ab2
-    let ret4 = solve example_6_1_pece2
+    let ret1 = solve Euler example_6_1
+    let ret2 = solve RK4 example_6_1
+    let ret3 = solve AB2 example_6_1
+    let ret4 = solve PECE2 example_6_1
     put "ode1.txt" ret1
     put "ode2.txt" ret2
     put "ode3.txt" ret3
@@ -30,7 +23,7 @@ main = do
 
 
 
-put :: String -> [(Float, Float)] -> IO ()
+put :: String -> [Dim1] -> IO ()
 put filename xs = do
     putStrLn text
     putStrLn ""

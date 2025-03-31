@@ -4,8 +4,7 @@ data MethodType = Euler | AB2 | Dahlquist | RK4 | PECE2
     deriving (Eq, Show)
 
 data IVP = IVP {
-    methodType :: MethodType,
-    derivative :: Float -> Float -> Float,
+    derivative :: TValue -> XValue -> XValue,
     xis :: [Float],
     xi's :: [Float],
     step_size :: Float,
@@ -14,26 +13,34 @@ data IVP = IVP {
 }
 
 instance Show IVP where
-    show (IVP m _ xis xi's step_size from to) = show [show m, show xis, show xi's, show step_size, show from, show to]
+    show (IVP m xis xi's step_size from to) = show [show xis, show xi's, show step_size, show from, show to]
 
-solve :: IVP -> [(Float, Float)]
-solve ivp
-    | methodType ivp == Euler = zip (iterate (+h) (t - h)) (xis ivp) ++ euler ivp
-    | methodType ivp == AB2 = zip (iterate (+h) (t - h * 2)) (xis ivp) ++ ab2 ivp
-    | methodType ivp == Dahlquist = zip (iterate (+h) (t - h * 2)) (xis ivp) ++ dahlquist ivp
-    | methodType ivp == RK4 = zip (iterate (+h) (t - h)) (xis ivp) ++ rk4 ivp
-    | methodType ivp == PECE2 = zip (iterate (+h) (t - h * 2)) (xis ivp) ++ pece2 ivp
+type TValue = Float
+type XValue = Float
+type YValue = Float
+type ZValue = Float
+
+type Dim1 = (TValue, XValue)
+type Dim2 = (TValue, XValue, YValue)
+type Dim3 = (TValue, XValue, YValue, ZValue)
+
+solve :: MethodType -> IVP -> [Dim1]
+solve methodType ivp
+    | methodType == Euler = zip (iterate (+h) (t - h)) (xis ivp) ++ euler ivp
+    | methodType == AB2 = zip (iterate (+h) (t - h * 2)) (xis ivp) ++ ab2 ivp
+    | methodType == Dahlquist = zip (iterate (+h) (t - h * 2)) (xis ivp) ++ dahlquist ivp
+    | methodType == RK4 = zip (iterate (+h) (t - h)) (xis ivp) ++ rk4 ivp
+    | methodType == PECE2 = zip (iterate (+h) (t - h * 2)) (xis ivp) ++ pece2 ivp
     | otherwise = []
     where
         t = from ivp
         h = step_size ivp
 
 
-euler :: IVP -> [(Float, Float)]
+euler :: IVP -> [Dim1]
 euler ivp
     | t > tf = []
     | otherwise = (t, x1) : euler IVP {
-        methodType = Euler,
         derivative = f,
         xis = [x1],
         xi's = [x1'],
@@ -52,11 +59,10 @@ euler ivp
         x1 = x0 + h * x0'
         x1' = f t x1
     
-ab2 :: IVP -> [(Float, Float)]
+ab2 :: IVP -> [Dim1]
 ab2 ivp
     | t > tf = []
     | otherwise = (t, x2) : ab2 IVP {
-        methodType = AB2,
         derivative = f,
         xis = [x1, x2],
         xi's = [x1', x2'],
@@ -76,11 +82,10 @@ ab2 ivp
         x2' = f t x2
 
 -- completely worthless
-dahlquist :: IVP -> [(Float, Float)]
+dahlquist :: IVP -> [Dim1]
 dahlquist ivp 
     | t > tf = []
     | otherwise = (t, x2) : dahlquist IVP {
-        methodType = Dahlquist,
         derivative = f,
         xis = [x1, x2],
         xi's = [x1', x2'],
@@ -99,11 +104,10 @@ dahlquist ivp
         x2 = -(4 * x1) + 5 * x0 + h * (4 * x1' + 2 * x0')
         x2' = f t x2
 
-rk4 :: IVP -> [(Float, Float)]
+rk4 :: IVP -> [Dim1]
 rk4 ivp 
     | t > tf = []
     | otherwise = (t, x1) : rk4 IVP {
-        methodType = RK4,
         derivative = f,
         xis = [x1],
         xi's = [],
@@ -126,11 +130,10 @@ rk4 ivp
 
         x1 = x0 + h * (k1 / 6 + k2 / 3 + k3 /3 + k4 / 6)
 
-pece2 :: IVP -> [(Float, Float)]
+pece2 :: IVP -> [Dim1]
 pece2 ivp
     | t > tf = []
     | otherwise = (t, x2) : pece2 IVP {
-        methodType = PECE2,
         derivative = f,
         xis = [x1, x2],
         xi's = [x1', x2'],
