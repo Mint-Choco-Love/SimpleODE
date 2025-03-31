@@ -23,12 +23,12 @@ main = do
 
 
 
-put :: String -> [Dim1] -> IO ()
+put :: String -> [DimValue] -> IO ()
 put filename xs = do
     putStrLn text
     putStrLn ""
     writeFile filename text
 
     where
-        text = intercalate "\n" $ map (\a -> printf "%.5f" (fst a) ++ " " ++ printf "%.5f" (snd a)) xs
+        text = intercalate "\n" $ map show xs
 

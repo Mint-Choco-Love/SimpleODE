@@ -1,10 +1,25 @@
 module SimpleODE where
+import Text.Printf
 
 data MethodType = Euler | AB2 | Dahlquist | RK4 | PECE2
     deriving (Eq, Show)
 
-data IVP = IVP {
+data IVP = IVP1D {
     derivative :: TValue -> XValue -> XValue,
+    xis :: [Float],
+    xi's :: [Float],
+    step_size :: Float,
+    from :: Float,
+    to :: Float
+} | IVP2D {
+    derivative2d :: TValue -> XValue -> YValue -> (XValue, YValue),
+    xis :: [Float],
+    xi's :: [Float],
+    step_size :: Float,
+    from :: Float,
+    to :: Float
+} | IVP3D {
+    derivative3d :: TValue -> XValue -> YValue -> ZValue -> (XValue, YValue, ZValue),
     xis :: [Float],
     xi's :: [Float],
     step_size :: Float,
@@ -13,34 +28,48 @@ data IVP = IVP {
 }
 
 instance Show IVP where
-    show (IVP m xis xi's step_size from to) = show [show xis, show xi's, show step_size, show from, show to]
+    show (IVP1D m xis xi's step_size from to) = show [show xis, show xi's, show step_size, show from, show to]
+    show (IVP2D m xis xi's step_size from to) = show [show xis, show xi's, show step_size, show from, show to]
+    show (IVP3D m xis xi's step_size from to) = show [show xis, show xi's, show step_size, show from, show to]
+
 
 type TValue = Float
 type XValue = Float
 type YValue = Float
 type ZValue = Float
 
-type Dim1 = (TValue, XValue)
-type Dim2 = (TValue, XValue, YValue)
-type Dim3 = (TValue, XValue, YValue, ZValue)
+data DimValue = Dim1 {
+    tValue :: TValue, xValue :: XValue
+} | Dim2 {
+    tValue :: TValue, xValue :: XValue, yValue :: YValue
+} | Dim3 {
+    tValue :: TValue, xValue :: XValue, yValue :: YValue, zValue :: ZValue
+}
 
-solve :: MethodType -> IVP -> [Dim1]
-solve methodType ivp
-    | methodType == Euler = zip (iterate (+h) (t - h)) (xis ivp) ++ euler ivp
-    | methodType == AB2 = zip (iterate (+h) (t - h * 2)) (xis ivp) ++ ab2 ivp
-    | methodType == Dahlquist = zip (iterate (+h) (t - h * 2)) (xis ivp) ++ dahlquist ivp
-    | methodType == RK4 = zip (iterate (+h) (t - h)) (xis ivp) ++ rk4 ivp
-    | methodType == PECE2 = zip (iterate (+h) (t - h * 2)) (xis ivp) ++ pece2 ivp
+instance Show DimValue where
+    show (Dim1 t x) = printf "%.5f" t ++ ", " ++ printf "%.5f" x
+    show (Dim2 t x y) = printf "%.5f" t ++ ", " ++ printf "%.5f" x ++ ", " ++ printf "%.5f" y
+    show (Dim3 t x y z) = printf "%.5f" t ++ ", " ++ printf "%.5f" x ++ ", " ++ printf "%.5f" y ++ ", " ++ printf "%.5f" z
+
+solve :: MethodType -> IVP -> [DimValue]
+solve methodType (IVP1D f xis xi's h t tf)
+    | methodType == Euler
+        = map (\x -> Dim1 {tValue = fst x, xValue = snd x}) (zip (iterate (+h) (t - h)) xis) ++ euler (IVP1D f xis xi's h t tf)
+    | methodType == AB2
+        = map (\x -> Dim1 {tValue = fst x, xValue = snd x}) (zip (iterate (+h) (t - h * 2)) xis) ++ ab2 (IVP1D f xis xi's h t tf)
+    | methodType == Dahlquist
+        = map (\x -> Dim1 {tValue = fst x, xValue = snd x}) (zip (iterate (+h) (t - h * 2)) xis) ++ dahlquist (IVP1D f xis xi's h t tf)
+    | methodType == RK4
+        = map (\x -> Dim1 {tValue = fst x, xValue = snd x}) (zip (iterate (+h) (t - h )) xis) ++ rk4 (IVP1D f xis xi's h t tf)
+    | methodType == PECE2
+        = map (\x -> Dim1 {tValue = fst x, xValue = snd x}) (zip (iterate (+h) (t - h * 2)) xis) ++ pece2 (IVP1D f xis xi's h t tf)
     | otherwise = []
-    where
-        t = from ivp
-        h = step_size ivp
 
 
-euler :: IVP -> [Dim1]
-euler ivp
+euler :: IVP -> [DimValue]
+euler (IVP1D f xis xi's h t tf)
     | t > tf = []
-    | otherwise = (t, x1) : euler IVP {
+    | otherwise = ret : euler IVP1D {
         derivative = f,
         xis = [x1],
         xi's = [x1'],
@@ -48,21 +77,18 @@ euler ivp
         from = t + h,
         to = tf
     }
-
     where
-        t = from ivp
-        tf = to ivp
-        h = step_size ivp
-        f = derivative ivp
-        x0 = head $ xis ivp
-        x0' = head $ xi's ivp
+        (x0:_) = xis
+        (x0':_) = xi's
         x1 = x0 + h * x0'
         x1' = f t x1
+
+        ret = Dim1 {tValue = t, xValue = x1}
     
-ab2 :: IVP -> [Dim1]
-ab2 ivp
+ab2 :: IVP -> [DimValue]
+ab2 (IVP1D f xis xi's h t tf)
     | t > tf = []
-    | otherwise = (t, x2) : ab2 IVP {
+    | otherwise = ret : ab2 IVP1D {
         derivative = f,
         xis = [x1, x2],
         xi's = [x1', x2'],
@@ -70,22 +96,19 @@ ab2 ivp
         from = t + h,
         to = tf
     }
-    
     where
-        t = from ivp
-        tf = to ivp
-        h = step_size ivp
-        f = derivative ivp
-        (x0:x1:_) = xis ivp
-        (x0':x1':_) = xi's ivp
+        (x0:x1:_) = xis
+        (x0':x1':_) = xi's
         x2 = x1 + 0.5 * h * (3 * x1' - x0')
         x2' = f t x2
 
+        ret = Dim1 {tValue = t, xValue = x2}
+
 -- completely worthless
-dahlquist :: IVP -> [Dim1]
-dahlquist ivp 
+dahlquist :: IVP -> [DimValue]
+dahlquist (IVP1D f xis xi's h t tf) 
     | t > tf = []
-    | otherwise = (t, x2) : dahlquist IVP {
+    | otherwise = ret : dahlquist IVP1D {
         derivative = f,
         xis = [x1, x2],
         xi's = [x1', x2'],
@@ -95,19 +118,17 @@ dahlquist ivp
     }
 
     where
-        t = from ivp
-        tf = to ivp
-        h = step_size ivp
-        f = derivative ivp
-        (x0:x1:_) = xis ivp
-        (x0':x1':_) = xi's ivp
+        (x0:x1:_) = xis
+        (x0':x1':_) = xi's
         x2 = -(4 * x1) + 5 * x0 + h * (4 * x1' + 2 * x0')
         x2' = f t x2
 
-rk4 :: IVP -> [Dim1]
-rk4 ivp 
+        ret = Dim1 {tValue = t, xValue = x2}
+
+rk4 :: IVP -> [DimValue]
+rk4 (IVP1D f xis xi's h t tf)  
     | t > tf = []
-    | otherwise = (t, x1) : rk4 IVP {
+    | otherwise = ret : rk4 IVP1D {
         derivative = f,
         xis = [x1],
         xi's = [],
@@ -117,11 +138,7 @@ rk4 ivp
     }
 
     where
-        t = from ivp
-        tf = to ivp
-        h = step_size ivp
-        f = derivative ivp
-        (x0:_) = xis ivp
+        (x0:_) = xis
         
         k1 = f (t - h) x0
         k2 = f (t - 0.5 * h) (x0 + 0.5 * h * k1)
@@ -130,10 +147,12 @@ rk4 ivp
 
         x1 = x0 + h * (k1 / 6 + k2 / 3 + k3 /3 + k4 / 6)
 
-pece2 :: IVP -> [Dim1]
-pece2 ivp
+        ret = Dim1 {tValue = t, xValue = x1}
+
+pece2 :: IVP -> [DimValue]
+pece2 (IVP1D f xis xi's h t tf) 
     | t > tf = []
-    | otherwise = (t, x2) : pece2 IVP {
+    | otherwise = ret : pece2 IVP1D {
         derivative = f,
         xis = [x1, x2],
         xi's = [x1', x2'],
@@ -143,14 +162,10 @@ pece2 ivp
     }
 
     where
-        t = from ivp
-        tf = to ivp
-        h = step_size ivp
-        f = derivative ivp
-        (x0:x1:_) = xis ivp
-        (x0':x1':_) = xi's ivp
+        (x0:x1:_) = xis
+        (x0':x1':_) = xi's
 
-        p = x1 + 0.5 * (3 * x1' - x0')
+        p = x1 + 0.5 * h * (3 * x1' - x0')
         e1 = f t p
         c = x1 - h / 12 * (5 * e1 + 8 * x1' - x0')
         e2 = f t c
@@ -159,3 +174,5 @@ pece2 ivp
 
         x2 = c + milne
         x2' = f t x2
+
+        ret = Dim1 {tValue = t, xValue = x2}
