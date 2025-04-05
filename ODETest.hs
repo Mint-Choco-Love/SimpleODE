@@ -1,4 +1,5 @@
 import SimpleODE
+import ODESolver
 import ODEExample
 import Data.List (intercalate)
 import Text.Printf
